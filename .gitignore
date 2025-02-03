@@ -1,0 +1,41 @@
+# Virtual environment
+.venv/
+
+# Python bytecode and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook-related files
+.ipynb_checkpoints/
+*.ipynb~  # Temporary Jupyter Notebook files
+*.nbconvert  # Converted Jupyter outputs
+*.nb.html  # Exported notebook HTML files
+*.sav  # Jupyter auto-saved checkpoints
+
+# Audio files and results (except example.wav)
+source_audio/*
+!source_audio/example.wav
+anonymized_audio/*
+!anonymized_audio/example.wav
+
+# Evaluation results
+results.csv
+
+# Docker artifacts
+*.tar
+*.bak
+
+# Editor and IDE specific files
+.vscode/
+.idea/
+*.swp
