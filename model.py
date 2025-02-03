@@ -34,7 +34,6 @@ def anonymize(input_audio_path):
     # Apply your anonymization algorithm
     
     # Output:
-    # audio = ... # numpy array representing the anonymized audio wavefrom
-    # sr = ... # sampling rate of the anonymized audio
-    audio, sr = librosa.load(input_audio_path, sr = 16000)
+    audio = ... # numpy array representing the anonymized audio wavefrom
+    sr = ... # sampling rate of the anonymized audio
     return audio, sr
