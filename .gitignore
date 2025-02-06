@@ -24,16 +24,22 @@ Thumbs.db
 
 # Audio files and results (except example.wav)
 source_audio/*
-!source_audio/example.wav
+!source_audio/example 1.wav
+!source_audio/example 2.wav
+!source_audio/example 3.wav
+!source_audio/example 4.wav
+
 anonymized_audio/*
-!anonymized_audio/example.wav
+!anonymized_audio/example 1.wav
+!anonymized_audio/example 2.wav
+!anonymized_audio/example 3.wav
+!anonymized_audio/example 4.wav
 
 # Evaluation results
 results.csv
 
-# Docker artifacts
-*.tar
-*.bak
+## speechbrain
+pretrained_models/
 
 # Editor and IDE specific files
 .vscode/

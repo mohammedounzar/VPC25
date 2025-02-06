@@ -8,11 +8,9 @@
 # <!> *SAVE YOUR PARAMETERS IN THE parameters/ DICRECTORY* <!>
 ############################################################################
 
-# <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
 
-import librosa
 
-def anonymize(input_audio_path):
+def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
     """
     anonymization algorithm
 
@@ -23,10 +21,8 @@ def anonymize(input_audio_path):
 
     Returns
     -------
-    audio : numpy array
-        numpy array representing the anonymized audio wavefrom
-    sr : int
-        sampling rate of the anonymized audio
+    output_audio_path : str
+        path to the anonymized audio file in one ".wav" format. Should have the same name as the source audio file but save in the anonymized_audio/ directory
     """
 
     # Read the source audio file
@@ -34,6 +30,7 @@ def anonymize(input_audio_path):
     # Apply your anonymization algorithm
     
     # Output:
-    audio = ... # numpy array representing the anonymized audio wavefrom
-    sr = ... # sampling rate of the anonymized audio
-    return audio, sr
+    output_audio_path = ... # path to the anonymized audio file (in one ".wav" format, should have the same name as the source audio file but save in the anonymized_audio/ directory)
+    
+    
+    return output_audio_path
