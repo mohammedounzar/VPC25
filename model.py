@@ -27,7 +27,7 @@ def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
 
     # Read the source audio file
 
-    # Apply your anonymization algorithm
+    # Apply your anonymization algorithm and save the anonymized audio file in .wav format in the anonymized_audio/ directory with the same file name as the source audio file
     
     # Output:
     output_audio_path = ... # path to the anonymized audio file (in one ".wav" format, should have the same name as the source audio file but save in the anonymized_audio/ directory)
