@@ -144,29 +144,9 @@ This will:
 
 The evaluation script will measure:
 
-- **Equal Error Rate (EER):**This metric, derived from an
-
-  Automatic Speaker Verification (ASV) system, measures the
-
-  system's ability to differentiate between speech from the
-
-  same speaker and different speakers. A higher EER
-
-  indicates better privacy protection, as it means the system
-
-  is less likely to correctly identify the speaker.
-- **Word Error Rate (WER):**This metric is calculated using an
-
-  Automatic Speech Recognition (ASR) system and measures
-
-  how well the anonymized speech preserves linguistic
-
-  content. A lower WER indicates better utility, meaning the
-
-  anonymized speech is still easily understood by the ASR
-
-  system.
-- **Processing time:**Measure the effeciency of the anonymization algorithm.
+- **Equal Error Rate (EER):** This metric, derived from an Automatic Speaker Verification (ASV) system, measures the system's ability to differentiate between speech from the same speaker and different speakers. A higher EER indicates better privacy protection, as it means the system is less likely to correctly identify the speaker.
+- **Word Error Rate (WER):** This metric is calculated using an Automatic Speech Recognition (ASR) system and measures how well the anonymized speech preserves linguistic content. A lower WER indicates better utility, meaning the anonymized speech is still easily understood by the ASR system.
+- **Processing time:** Measure the effeciency of the anonymization algorithm.
 
 Results are stored in **`results.csv`**.
 
