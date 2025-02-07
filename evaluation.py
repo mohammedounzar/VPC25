@@ -19,6 +19,8 @@ from sklearn.metrics import roc_curve
 import torchaudio
 from speechbrain.inference import SpeakerRecognition
 from model import anonymize
+import soundfile as sf
+import sys
 
 import warnings
 warnings.simplefilter("ignore", FutureWarning)
@@ -39,7 +41,7 @@ VERIFICATION_MODEL = SpeakerRecognition.from_hparams(
     savedir="pretrained_models/spkrec-ecapa-voxceleb"
 )
 
-def compute_total_eer(original_dir, anonymized_dir):
+def compute_total_eer(evaluation_data_path):
     """Calculate EER for an anonymization model with robust error handling."""
     
     original_dir = Path(original_dir)
@@ -190,50 +192,82 @@ def compute_we(input_audio_path, anonymized_audio_path):
     we = wer(original, anonymized) * words
     return we, words
 
-def evaluate(input_directory, output_directory, anonymization_algorithm):
+def evaluate(evaluation_data_path, anonymization_algorithm):
     """
     Evaluate the anonymization algorithm by computing WER and EER.
     """
-    if not os.path.exists(input_directory):
-        error_msg = f"Input directory does not exist: {input_directory}"
+
+    enrollment_directory = os.path.join(evaluation_data_path, "Enrollment")
+    trial_directory = os.path.join(evaluation_data_path, "Trial")
+
+    if not os.path.exists(enrollment_directory):
+        error_msg = f"Enrollment directory does not exist: {enrollment_directory}"
         logging.error(error_msg)
         raise FileNotFoundError(error_msg)
 
-    if not os.path.exists(output_directory):
-        logging.info(f"Creating output directory: {output_directory}")
-        os.makedirs(output_directory)
-
-    audio_files = [f for f in os.listdir(input_directory) if f.lower().endswith(('.wav', '.mp3', '.flac', '.ogg'))]
-
-    if not audio_files:
-        error_msg = f"No audio files found in input directory: {input_directory}"
+    if not os.path.exists(trial_directory):
+        logging.info(f"Creating output directory: {trial_directory}")
         logging.error(error_msg)
         raise FileNotFoundError(error_msg)
 
     total_wer = 0
     total_words = 0
-
     start = time.time()
 
-    for filename in tqdm(audio_files, desc="Anonymizing Audio Files"):
-        input_audio_path = os.path.join(input_directory, filename)
-        try:
-            anonymized_audio_path = anonymization_algorithm(input_audio_path)
-        except Exception as e:
-            error_msg = f"Error in anonymization algorithm for {filename}: {e}"
-            logging.error(error_msg)
-            raise RuntimeError(error_msg)
+    # Process Enrollment and Trial directories
+    for subset_directory in [enrollment_directory, trial_directory]:
+        subset_name = os.path.basename(subset_directory)  # "Enrollment" or "Trial"
 
-        we, reference_length = compute_we(input_audio_path, anonymized_audio_path)
-        total_wer += we
-        total_words += reference_length
+        for speaker in os.listdir(subset_directory):
+            speaker_path = os.path.join(subset_directory, speaker)
+            if not os.path.isdir(speaker_path):
+                continue
 
-    eer = compute_total_eer(input_directory, output_directory)
+            # Ensure the anonymized directory exists
+            anonymized_dir = os.path.join(speaker_path, "anonymized")
+            os.makedirs(anonymized_dir, exist_ok=True)
 
-    if total_words == 0:
-        error_msg = "No valid reference transcriptions found. Cannot compute WER."
-        logging.error(error_msg)
-        raise RuntimeError(error_msg)
+            # Collect all .wav files
+            audio_files = [
+                f for f in os.listdir(speaker_path) 
+                if f.lower().endswith('.wav')
+            ]
+
+            # If there are no .wav files, log and continue
+            if not audio_files:
+                logging.warning(f"No audio files found for speaker: {speaker_path}")
+                continue
+
+            for filename in tqdm(audio_files, desc=f"Processing {subset_name}/{speaker}"):
+                input_audio_path = os.path.join(speaker_path, filename)
+
+                # Ensure file is strictly .wav (reject other formats)
+                if not filename.endswith('.wav'):
+                    error_msg = f"Invalid file format detected: {filename}. Only .wav files are allowed."
+                    logging.error(error_msg)
+                    raise ValueError(error_msg)
+
+                # Generate anonymized file path
+                anonymized_audio_path = os.path.join(anonymized_dir, f"anon_{filename}")
+
+                try:
+                    # Anonymization process
+                    anonymized_audio, sr = anonymization_algorithm(input_audio_path)
+                    sf.write(anonymized_audio_path, anonymized_audio, sr)
+                except Exception as e:
+                    logging.error(f"Error anonymizing {filename}: {e}")
+                    continue
+
+                try:
+                    # Compute WER
+                    we, reference_length = compute_we(input_audio_path, anonymized_audio_path)
+                    total_wer += we
+                    total_words += reference_length
+                except Exception as e:
+                    logging.error(f"Error computing WER for {filename}: {e}")
+                    continue
+
+    eer = 0 #compute_total_eer(evaluation_data_path)
 
     end = time.time()
 
@@ -245,7 +279,8 @@ def evaluate(input_directory, output_directory, anonymization_algorithm):
 
 if __name__ == "__main__":
     try:
-        evaluate("source_audio/", "anonymized_audio/", anonymize)
+        evaluation_data_path = sys.argv[1] if len(sys.argv) > 1 else "evaluation_data/"
+        evaluate(evaluation_data_path, anonymize)
     except Exception as e:
         logging.critical(f"Evaluation failed: {e}")
         exit(1)

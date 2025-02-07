@@ -8,7 +8,7 @@
 # <!> *SAVE YOUR PARAMETERS IN THE parameters/ DICRECTORY* <!>
 ############################################################################
 
-
+import librosa
 
 def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
     """
@@ -21,16 +21,20 @@ def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
 
     Returns
     -------
-    output_audio_path : str
-        path to the anonymized audio file in one ".wav" format. Should have the same name as the source audio file but save in the anonymized_audio/ directory
+    audio : numpy.ndarray, shape (samples,), dtype=np.float32
+        The anonymized audio signal as a 1D NumPy array of type `np.float32`, 
+        which ensures compatibility with `soundfile.write()`.
+    sr : int
+        The sample rate of the processed audio.
     """
 
     # Read the source audio file
 
-    # Apply your anonymization algorithm and save the anonymized audio file in .wav format in the anonymized_audio/ directory with the same file name as the source audio file
+    # Apply your anonymization algorithm
     
     # Output:
-    output_audio_path = ... # path to the anonymized audio file (in one ".wav" format, should have the same name as the source audio file but save in the anonymized_audio/ directory)
+    # audio = ...
+    # sr = ...
+    audio, sr = librosa.load(input_audio_path, sr = 16000)
     
-    
-    return output_audio_path
+    return audio, sr
