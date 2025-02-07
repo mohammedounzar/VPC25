@@ -8,8 +8,6 @@
 # <!> *SAVE YOUR PARAMETERS IN THE parameters/ DICRECTORY* <!>
 ############################################################################
 
-import librosa
-
 def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
     """
     anonymization algorithm
@@ -33,8 +31,7 @@ def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
     # Apply your anonymization algorithm
     
     # Output:
-    # audio = ...
-    # sr = ...
-    audio, sr = librosa.load(input_audio_path, sr = 16000)
+    audio = ...
+    sr = ...
     
     return audio, sr

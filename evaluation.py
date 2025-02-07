@@ -16,11 +16,11 @@ from jiwer import wer
 from scipy.optimize import brentq
 from scipy.interpolate import interp1d
 from sklearn.metrics import roc_curve
-import torchaudio
-from speechbrain.inference import SpeakerRecognition
 from model import anonymize
 import soundfile as sf
 import sys
+from typing import Union
+import librosa
 
 import warnings
 warnings.simplefilter("ignore", FutureWarning)
@@ -35,125 +35,145 @@ logging.getLogger("transformers").setLevel(logging.ERROR)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# Load model once (optimize for repeated evaluations)
-VERIFICATION_MODEL = SpeakerRecognition.from_hparams(
-    source="speechbrain/spkrec-ecapa-voxceleb", 
-    savedir="pretrained_models/spkrec-ecapa-voxceleb"
-)
-
-def compute_total_eer(evaluation_data_path):
-    """Calculate EER for an anonymization model with robust error handling."""
+def compute_total_eer(
+    enrollment_dir: Union[str, Path], 
+    trial_dir: Union[str, Path], 
+    asv_model=None, 
+    sr: int = 16000
+) -> float:
+    """
+    Compute Equal Error Rate (EER) between original and anonymized audio files.
     
-    original_dir = Path(original_dir)
-    anonymized_dir = Path(anonymized_dir)
-
-    if not original_dir.exists():
-        error_msg = f"Original directory does not exist: {original_dir}"
-        logging.error(error_msg)
-        raise FileNotFoundError(error_msg)
+    Args:
+        enrollment_dir (str/Path): Directory containing enrollment audio files
+        trial_dir (str/Path): Directory containing trial audio files
+        asv_model (Optional): Pre-trained speaker verification model
+        sr (int): Sampling rate for audio processing
     
-    if not anonymized_dir.exists():
-        error_msg = f"Anonymized directory does not exist: {anonymized_dir}"
-        logging.error(error_msg)
-        raise FileNotFoundError(error_msg)
-
-    original_files = []
-    anonymized_files = []
-
-    # Walk through directories to find matching speaker/utterance pairs
-    for orig_path in original_dir.rglob("*.wav"):
-        rel_path = orig_path.relative_to(original_dir)
-        ano_path = anonymized_dir / rel_path
-
-        if ano_path.exists():
-            original_files.append(orig_path)
-            anonymized_files.append(ano_path)
-        else:
-            logging.warning(f"Anonymized file not found: {ano_path}")
-
-    if not original_files or not anonymized_files:
-        error_msg = "No valid audio file pairs found in the provided directories."
-        logging.error(error_msg)
-        raise ValueError(error_msg)
-
-    def _get_embeddings(file_list):
-        """Extract embeddings with error handling."""
-        embeddings = []
-        for file in tqdm(file_list, desc="Computing embeddings"):
+    Returns:
+        float: Equal Error Rate (EER)
+    """
+    # Default logging configuration if not already set
+    if not logging.getLogger().handlers:
+        logging.basicConfig(level=logging.INFO)
+    # Validate inputs
+    enrollment_dir = Path(enrollment_dir)
+    trial_dir = Path(trial_dir)
+    
+    if not enrollment_dir.exists():
+        raise FileNotFoundError(f"Enrollment directory not found: {enrollment_dir}")
+    
+    if not trial_dir.exists():
+        raise FileNotFoundError(f"Trial directory not found: {trial_dir}")
+    
+    # Default ASV model if not provided
+    if asv_model is None:
+        try:
+            from speechbrain.inference import SpeakerRecognition
+            asv_model = SpeakerRecognition.from_hparams(
+                source="speechbrain/spkrec-ecapa-voxceleb", 
+                savedir="pretrained_models/spkrec-ecapa-voxceleb"
+            )
+        except ImportError:
+            raise ImportError("No ASV model provided and SpeechBrain model could not be imported.")
+    
+    # Collect file pairs
+    enrollment_files = {}
+    trial_files = {}
+    
+    # Find enrollment and trial files
+    for speaker_dir in enrollment_dir.iterdir():
+        if speaker_dir.is_dir():
+            speaker_name = speaker_dir.name
+            anon_files = list(speaker_dir.rglob("anon_*.wav"))
+            if anon_files:
+                enrollment_files[speaker_name] = anon_files[0]
+    
+    for speaker_dir in trial_dir.iterdir():
+        if speaker_dir.is_dir():
+            speaker_name = speaker_dir.name
+            trial_file = list(speaker_dir.rglob("*.wav"))
+            if trial_file:
+                trial_files[speaker_name] = trial_file[0]
+    
+    # Compute similarity scores
+    similarity_scores = []
+    labels = []
+    
+    # Process genuine pairs
+    for speaker, enroll_file in enrollment_files.items():
+        if speaker in trial_files:
             try:
-                signal, sr = torchaudio.load(file)
+                # Load and process enrollment audio
+                y_enroll, _ = librosa.load(enroll_file, sr=sr)
+                emb_enroll = asv_model.encode_batch(
+                    torch.tensor(y_enroll).unsqueeze(0)
+                ).squeeze().numpy()
                 
-                if signal.shape[1] == 0:
-                    logging.warning(f"Empty audio file: {file}")
-                    continue
-
-                if signal.shape[0] > 1:  # Convert to mono
-                    signal = torch.mean(signal, dim=0, keepdim=True)
-
-                emb = VERIFICATION_MODEL.encode_batch(signal).squeeze().cpu().numpy()
-                embeddings.append(emb)
+                # Load and process trial audio
+                y_trial, _ = librosa.load(trial_files[speaker], sr=sr)
+                emb_trial = asv_model.encode_batch(
+                    torch.tensor(y_trial).unsqueeze(0)
+                ).squeeze().numpy()
+                
+                # Compute cosine similarity
+                score = np.dot(emb_enroll, emb_trial) / (
+                    np.linalg.norm(emb_enroll) * np.linalg.norm(emb_trial)
+                )
+                
+                similarity_scores.append(score)
+                labels.append(1)  # Genuine pair
             
             except Exception as e:
-                logging.error(f"Error computing embeddings for {file}: {e}")
+                logging.warning(f"Error processing genuine pair for {speaker}: {e}")
         
-        if not embeddings:
-            error_msg = "Failed to compute embeddings for any audio file."
-            logging.error(error_msg)
-            raise RuntimeError(error_msg)
-
-        return np.array(embeddings)
-
-    try:
-        orig_embeddings = _get_embeddings(original_files)
-        ano_embeddings = _get_embeddings(anonymized_files)
-    except RuntimeError as e:
-        raise RuntimeError(f"Embedding extraction failed: {e}")
-
-    if orig_embeddings.shape[0] != ano_embeddings.shape[0]:
-        error_msg = "Mismatch in the number of embeddings for original and anonymized audio."
-        logging.error(error_msg)
-        raise ValueError(error_msg)
-
-    # Compute genuine scores
-    try:
-        genuine_scores = np.sum(orig_embeddings * ano_embeddings, axis=1) / (
-            np.linalg.norm(orig_embeddings, axis=1) * np.linalg.norm(ano_embeddings, axis=1)
-        )
-    except Exception as e:
-        logging.error(f"Error computing genuine scores: {e}")
-        raise RuntimeError("Failed to compute genuine scores.")
-
-    # Compute impostor scores
-    impostor_scores = []
-    rng = np.random.default_rng(seed=42)  # For reproducibility
-    num_impostor_pairs = min(len(orig_embeddings), 1000)  # Limit to avoid excessive computation
+        # Process impostor pairs
+        for other_speaker, other_trial_file in trial_files.items():
+            if other_speaker != speaker:
+                try:
+                    # Load and process enrollment audio
+                    y_enroll, _ = librosa.load(enroll_file, sr=sr)
+                    emb_enroll = asv_model.encode_batch(
+                        torch.tensor(y_enroll).unsqueeze(0)
+                    ).squeeze().numpy()
+                    
+                    # Load and process impostor trial audio
+                    y_other, _ = librosa.load(other_trial_file, sr=sr)
+                    emb_other = asv_model.encode_batch(
+                        torch.tensor(y_other).unsqueeze(0)
+                    ).squeeze().numpy()
+                    
+                    # Compute cosine similarity
+                    score = np.dot(emb_enroll, emb_other) / (
+                        np.linalg.norm(emb_enroll) * np.linalg.norm(emb_other)
+                    )
+                    
+                    similarity_scores.append(score)
+                    labels.append(0)  # Impostor pair
+                
+                except Exception as e:
+                    logging.warning(f"Error processing impostor pair: {e}")
     
-    for _ in tqdm(range(num_impostor_pairs), desc="Calculating impostors"):
-        try:
-            i, j = rng.choice(len(orig_embeddings), 2, replace=False)
-            score = np.dot(orig_embeddings[i], ano_embeddings[j]) / (
-                np.linalg.norm(orig_embeddings[i]) * np.linalg.norm(ano_embeddings[j])
-            )
-            impostor_scores.append(score)
-        except Exception as e:
-            logging.error(f"Error computing impostor score: {e}")
-
-    if not impostor_scores:
-        error_msg = "Failed to compute impostor scores."
-        logging.error(error_msg)
-        raise RuntimeError(error_msg)
-
+    # Validate scores
+    if len(similarity_scores) == 0:
+        raise ValueError("No similarity scores computed. Check audio files and model.")
+    
     # Compute EER
     try:
-        y_true = np.concatenate([np.ones_like(genuine_scores), np.zeros_like(impostor_scores)])
-        y_score = np.concatenate([genuine_scores, impostor_scores])
+        y_true = np.array(labels)
+        y_scores = np.array(similarity_scores)
         
-        fpr, tpr, _ = roc_curve(y_true, y_score)
-        eer = brentq(lambda x: 1.0 - x - interp1d(fpr, tpr)(x), 0.0, 1.0)
+        # Compute ROC curve
+        fpr, tpr, thresholds = roc_curve(y_true, y_scores)
+        
+        # Compute EER
+        eer = brentq(lambda x: 1. - x - interp1d(fpr, tpr)(x), 0., 1.)
+        
         return eer
+    
     except Exception as e:
-        logging.error(f"Error computing EER: {e}")
-        raise RuntimeError("Failed to compute EER.")
+        logging.error(f"EER computation failed: {e}")
+        raise RuntimeError("Could not compute Equal Error Rate.")
 
 
 def transcribe_audio(audio_path):
@@ -267,7 +287,7 @@ def evaluate(evaluation_data_path, anonymization_algorithm):
                     logging.error(f"Error computing WER for {filename}: {e}")
                     continue
 
-    eer = 0 #compute_total_eer(evaluation_data_path)
+    eer = compute_total_eer(enrollment_directory, trial_directory)
 
     end = time.time()
 

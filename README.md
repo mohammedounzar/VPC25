@@ -7,8 +7,31 @@ Welcome to the **Voice Privacy Challenge**! Your task is to develop a model that
 ## **📂 Repository Structure**
 
 ```
-anonymized_audio/      # Output directory where anonymized audio files will be saved
-source_audio/          # Directory for original audio files (participants can add their own, provided they are in .wav format and include at least three files)
+evaluation_data/       # Directory containing enrollment and trial audio data
+│── Enrollment/        # Speaker audio files for enrollment
+│   ├── speaker1/      # Directory for Speaker 1
+│   │   ├── 1272-128104-0000.wav  # Original enrollment utterance
+│   │   ├── ...
+│   │   └── anonymized/            # Anonymized versions of the above audio files
+│   │       ├── anon_1272-128104-0000.wav
+│   │       ├── ...
+│   ├── speaker2/
+│   ├── speaker3/
+│   ├── speaker4/
+│   └── ...
+│
+│── Trial/             # Speaker audio files for testing (trial phase)
+│   ├── speaker1/
+│   │   ├── 1272-128104-0003.wav  # Trial utterances (different from enrollment)
+│   │   ├── ...
+│   │   └── anonymized/
+│   │       ├── anon_1272-128104-0003.wav
+│   │       ├── a...
+│   ├── speaker2/
+│   ├── speaker3/
+│   ├── speaker4/
+│   └── ...
+│
 parameters/            # Directory to store model parameters (participants should add their own)
 evaluation.py          # DO NOT MODIFY - Evaluates your model and generates results.csv
 model.py               # MODIFY - Implement your anonymization model here
@@ -17,6 +40,26 @@ requirements.txt       # MODIFY - List your dependencies here
 run.sh                 # DO NOT MODIFY - Runs the evaluation script
 ```
 
+---
+
+### **🗂 Understanding Enrollment and Trial Data**
+
+In this challenge, participants work with **enrollment** and **trial** utterances, which follow a structure similar to speaker verification tasks.
+
+- **Enrollment Utterances** (Stored in `Enrollment/`):
+  - These are speech recordings associated with a particular speaker.
+  - Each speaker has multiple enrollment utterances, which serve as reference data.
+  - The anonymization system must ensure that any transformed enrollment utterance still preserves the necessary speech characteristics, except for the speaker's identity.
+
+- **Trial Utterances** (Stored in `Trial/`):
+  - These are new speech recordings from the same speakers but contain different utterances.
+  - These utterances are anonymized and later compared against enrollment utterances.
+  - The anonymization system must ensure that the same speaker's trial utterances still match their anonymized enrollment utterances while preventing identification of the original speaker.
+
+### **🔑 Key Properties**
+- Each **speaker in Enrollment and Trial is the same**, meaning `speaker1` in `Enrollment/` is the same as `speaker1` in `Trial/`, but their audio files differ.
+- The anonymized versions of a speaker’s **trial utterances must match the anonymized version of their enrollment utterances**, maintaining consistency in the "pseudo-speaker" identity.
+- The anonymization system should **not alter linguistic content** but should make it impossible to link the anonymized voice back to the original speaker.
 ---
 ## **🚀 Getting Started**
 
@@ -117,7 +160,7 @@ For more details on virtual environments in Python, refer to:
 
 ### **5️⃣ Add Your Source Audio Files**
 
-- Place your test audio files inside **`source_audio/`**.
+- Place your test audio files inside **`evaluation_data/`**.
 - The evaluation script will process these files automatically.
 
 ---
@@ -135,7 +178,7 @@ This will:
 1. Set up and activate the virtual environment (if not already done).
 2. Ensure dependencies are installed.
 3. Process the source audio.
-4. Generate anonymized audio in **`anonymized_audio/`**.
+4. Generate anonymized audio files.
 5. Output evaluation results to **`results.csv`**.
 
 ---
@@ -165,11 +208,5 @@ Results are stored in **`results.csv`**.
 
 - Delete or modify `evaluation.py` or `run.sh`.
 - Remove or alter existing directories.
-
----
-
-## **📬 Need Help?**
-
-If you have questions, feel free to contact <Contact>.
 
 Good luck! 🚀🎧

@@ -24,7 +24,6 @@ Thumbs.db
 
 # Audio files and results (except example.wav)
 evaluation_data/
-test.ipynb
 
 # Evaluation results
 results.csv
