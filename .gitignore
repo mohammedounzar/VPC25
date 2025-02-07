@@ -23,17 +23,7 @@ Thumbs.db
 *.sav  # Jupyter auto-saved checkpoints
 
 # Audio files and results (except example.wav)
-source_audio/*
-!source_audio/example 1.wav
-!source_audio/example 2.wav
-!source_audio/example 3.wav
-!source_audio/example 4.wav
-
-anonymized_audio/*
-!anonymized_audio/example 1.wav
-!anonymized_audio/example 2.wav
-!anonymized_audio/example 3.wav
-!anonymized_audio/example 4.wav
+evaluation_data/
 
 # Evaluation results
 results.csv
