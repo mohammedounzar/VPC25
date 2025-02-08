@@ -12,7 +12,7 @@ evaluation_data/       # Directory containing enrollment and trial audio data
 │   ├── speaker1/      # Directory for Speaker 1
 │   │   ├── 1272-128104-0000.wav  # Original enrollment utterance
 │   │   ├── ...
-│   │   └── anonymized/            # Anonymized versions of the above audio files
+│   │   └── anonymized/            # Anonymized versions of the above audio files (Will be automatically created based on your anonymization algorithm when the evaluation script is run)
 │   │       ├── anon_1272-128104-0000.wav
 │   │       ├── ...
 │   ├── speaker2/
@@ -24,9 +24,9 @@ evaluation_data/       # Directory containing enrollment and trial audio data
 │   ├── speaker1/
 │   │   ├── 1272-128104-0003.wav  # Trial utterances (different from enrollment)
 │   │   ├── ...
-│   │   └── anonymized/
+│   │   └── anonymized/           # Anonymized versions of the above audio files (Will be automatically created based on your anonymization algorithm when the evaluation script is run)
 │   │       ├── anon_1272-128104-0003.wav
-│   │       ├── a...
+│   │       ├── ...
 │   ├── speaker2/
 │   ├── speaker3/
 │   ├── speaker4/
