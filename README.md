@@ -80,7 +80,7 @@ Once you've forked the repository, clone it to your local machine:
 ```sh
 # Replace <YOUR_GITHUB_USERNAME> with your actual GitHub username
 git clone https://github.com/<YOUR_GITHUB_USERNAME>/voice-privacy-challenge.git
-cd voice-privacy-challenge
+cd VPC25
 ```
 
 This ensures you're working on your own version of the repository while still being able to pull updates from the original source.
@@ -106,6 +106,8 @@ python --version
 If you don't have Python 3.12, download it from [python.org](https://www.python.org/downloads/).
 
 #### **Create a Virtual Environment**
+
+These instructions should be followed inside the **`VPC25/`** folder exactly as written. Do not modify the command examples, including the virtual environment name.
 
 ##### **Linux/macOS**
 
@@ -170,9 +172,9 @@ For more details on virtual environments in Python, refer to:
 To test your model, execute:
 
 ```sh
-sh run.sh
+bash run.sh
 ```
-
+**Windows users must use Git Bash** to run this command, as PowerShell and Command Prompt do not support shell scripts properly.
 This will:
 
 1. Set up and activate the virtual environment (if not already done).

@@ -10,17 +10,32 @@
 run() {
     echo "Running evaluation ..."
 
+    # Determine the correct Python command
+    PYTHON_CMD=$(command -v python3.12 || command -v python || command -v python3)
+    echo "hi"
+    echo "$PYTHON_CMD"
+    echo "bye"
+    if [ -z "$PYTHON_CMD" ]; then
+        echo "Python not found! Please install Python 3.12"
+        exit 1
+    fi
+
     # Check if virtual environment exists
     if [ ! -d ".venv" ]; then
         echo "Virtual environment not found! Creating one..."
-        python3.12 -m venv .venv
+        $PYTHON_CMD -m venv .venv
     fi
 
-    # Activate virtual environment
-    source .venv/bin/activate
+    # Activate virtual environment (different paths for Windows and Unix)
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+        source .venv/Scripts/activate
+    else
+        source .venv/bin/activate
+    fi
 
     # Ensure required packages are installed
-    pip install -r requirements.txt --quiet
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt -q
 
     # Set evaluation directory (default: "evaluation_data/")
     EVAL_DIR=${1:-"evaluation_data/"}
