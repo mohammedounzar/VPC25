@@ -79,7 +79,7 @@ Once you've forked the repository, clone it to your local machine:
 
 ```sh
 # Replace <YOUR_GITHUB_USERNAME> with your actual GitHub username
-git clone https://github.com/<YOUR_GITHUB_USERNAME>/voice-privacy-challenge.git
+git clone https://github.com/<YOUR_GITHUB_USERNAME>/VPC25.git
 cd VPC25
 ```
 
