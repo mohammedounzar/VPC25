@@ -12,9 +12,6 @@ run() {
 
     # Determine the correct Python command
     PYTHON_CMD=$(command -v python3.12 || command -v python || command -v python3)
-    echo "hi"
-    echo "$PYTHON_CMD"
-    echo "bye"
     if [ -z "$PYTHON_CMD" ]; then
         echo "Python not found! Please install Python 3.12"
         exit 1
