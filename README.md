@@ -105,6 +105,29 @@ python --version
 
 If you don't have Python 3.12, download it from [python.org](https://www.python.org/downloads/).
 
+#### **Install FFmpeg (Required for Audio Processing)**
+
+To process audio files, **FFmpeg** must be installed. Follow these steps based on your system:
+
+##### **Linux**
+```sh
+sudo apt update && sudo apt install ffmpeg
+```
+
+##### **macOS**
+```sh
+brew install ffmpeg
+```
+
+##### **Windows**
+1. Download FFmpeg from [ffmpeg.org](https://ffmpeg.org/download.html) (recommended: Windows build from gyan.dev).
+2. Extract it to a folder (e.g., `C:\ffmpeg`).
+3. Add `C:\ffmpeg\bin` to your **system PATH** to make FFmpeg accessible from the command line.
+4. Verify installation by running:
+   ```sh
+   ffmpeg -version
+   ```
+
 #### **Create a Virtual Environment**
 
 These instructions should be followed inside the **`VPC25/`** folder exactly as written. Do not modify the command examples, including the virtual environment name.
@@ -174,7 +197,7 @@ To test your model, execute:
 ```sh
 bash run.sh
 ```
-**Windows users must use Git Bash** to run this command, as PowerShell and Command Prompt do not support shell scripts properly.
+
 This will:
 
 1. Set up and activate the virtual environment (if not already done).
@@ -182,6 +205,10 @@ This will:
 3. Process the source audio.
 4. Generate anonymized audio files.
 5. Output evaluation results to **`results.csv`**.
+
+**Important:**
+- **Windows users** must use **Git Bash** to run this command, as PowerShell and Command Prompt do not support shell scripts properly.
+- **Windows and macOS users** might need to run `run.sh` with **administrator privileges** to avoid permission issues with symbolic links.
 
 ---
 
