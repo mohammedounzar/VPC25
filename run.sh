@@ -37,8 +37,11 @@ run() {
     # Set evaluation directory (default: "evaluation_data/")
     EVAL_DIR=${1:-"evaluation_data/"}
 
+    # Set second argument (default: "default_value")
+    ASR_MODEL_ID=${2:-"facebook/wav2vec2-base-960h"}
+
     # Run the evaluation with the specified directory
-    python evaluation.py "$EVAL_DIR"
+    python evaluation.py "$EVAL_DIR" "$ASR_MODEL_ID"
 
     echo "... end of evaluation run"
 }

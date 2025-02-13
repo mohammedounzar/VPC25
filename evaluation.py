@@ -21,6 +21,7 @@ import soundfile as sf
 import sys
 from typing import Union
 import librosa
+from speechbrain.inference import SpeakerRecognition
 
 import warnings
 warnings.simplefilter("ignore", FutureWarning)
@@ -34,6 +35,7 @@ logging.basicConfig(
 logging.getLogger("transformers").setLevel(logging.ERROR)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 def compute_total_eer(
     enrollment_dir: Union[str, Path], 
@@ -69,7 +71,6 @@ def compute_total_eer(
     # Default ASV model if not provided
     if asv_model is None:
         try:
-            from speechbrain.inference import SpeakerRecognition
             asv_model = SpeakerRecognition.from_hparams(
                 source="speechbrain/spkrec-ecapa-voxceleb", 
                 savedir="pretrained_models/spkrec-ecapa-voxceleb"
@@ -188,8 +189,7 @@ def transcribe_audio(audio_path):
         raise FileNotFoundError(error_msg)
 
     try:
-        asr_pipeline = pipeline("automatic-speech-recognition", model="facebook/wav2vec2-base-960h", device=device)
-        transcription = asr_pipeline(str(audio_path))
+        transcription = ASR_PIPELINE(str(audio_path))
         return transcription['text'].lower()
     except Exception as e:
         error_msg = f"Error transcribing {audio_path}: {e}"
@@ -226,7 +226,7 @@ def evaluate(evaluation_data_path, anonymization_algorithm):
         raise FileNotFoundError(error_msg)
 
     if not os.path.exists(trial_directory):
-        logging.info(f"Creating output directory: {trial_directory}")
+        error_msg = f"Trial directory does not exist: {trial_directory}"
         logging.error(error_msg)
         raise FileNotFoundError(error_msg)
 
@@ -275,21 +275,32 @@ def evaluate(evaluation_data_path, anonymization_algorithm):
                     anonymized_audio, sr = anonymization_algorithm(input_audio_path)
                     sf.write(anonymized_audio_path, anonymized_audio, sr)
                 except Exception as e:
-                    logging.error(f"Error anonymizing {filename}: {e}")
-                    continue
+                    error_msg = f"Error anonymizing {filename}: {e}"
+                    logging.error(error_msg)
+                    raise ValueError(error_msg)
 
                 try:
                     # Compute WER
                     we, reference_length = compute_we(input_audio_path, anonymized_audio_path)
+                    if reference_length == 0:
+                        error_msg = f"Reference length is 0 for {filename}. Please ensure the original audio files you are using are not empty and contain english speech. Skipping WER computation."
+                        logging.warning(error_msg)
+                        continue
                     total_wer += we
                     total_words += reference_length
                 except Exception as e:
-                    logging.error(f"Error computing WER for {filename}: {e}")
-                    continue
+                    error_msg = f"Error computing WER for {filename}: {e}"
+                    logging.error(error_msg)
+                    raise ValueError(error_msg)
 
     eer = compute_total_eer(enrollment_directory, trial_directory)
 
     end = time.time()
+
+    if total_words == 0:
+        error_msg = f"Empty transcriptions. Please ensure the original audio files you are using are not empty and contain english speech."
+        logging.error(error_msg)
+        raise ValueError(error_msg)
 
     avg_wer = total_wer / total_words
     results = pd.DataFrame([{"WER": avg_wer, "EER": eer, "Runtime (s)": end - start}])
@@ -300,6 +311,9 @@ def evaluate(evaluation_data_path, anonymization_algorithm):
 if __name__ == "__main__":
     try:
         evaluation_data_path = sys.argv[1] if len(sys.argv) > 1 else "evaluation_data/"
+        asr_model_id = sys.argv[2] if len(sys.argv) > 2 else "facebook/wav2vec2-base-960h"
+        
+        ASR_PIPELINE = pipeline("automatic-speech-recognition", model=asr_model_id, device=device)
         evaluate(evaluation_data_path, anonymize)
     except Exception as e:
         logging.critical(f"Evaluation failed: {e}")
