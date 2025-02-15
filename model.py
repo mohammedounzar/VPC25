@@ -7,6 +7,7 @@
 # If you trained a machine learning model you can store your parameters in any format you want (npy, h5, json, yaml, ...)
 # <!> *SAVE YOUR PARAMETERS IN THE parameters/ DICRECTORY* <!>
 ############################################################################
+import librosa
 
 def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
     """
@@ -26,12 +27,17 @@ def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
         The sample rate of the processed audio.
     """
 
+    arr_audio,fr=librosa.load(input_audio_path,sr=None)
+    audio_shifted=librosa.effects.pitch_shift(arr_audio,sr=fr,n_steps=3.0,scale=False)
+    audio_stretched = librosa.effects.time_stretch(audio_shifted,rate=1)
+    # sf.write(output_file_name, audio_stretched, sr, subtype='PCM_24')
+
     # Read the source audio file
 
     # Apply your anonymization algorithm
     
     # Output:
-    audio = ...
-    sr = ...
+    audio = audio_stretched
+    sr = fr
     
     return audio, sr
