@@ -4,6 +4,8 @@ import librosa
 from pydub import AudioSegment
 import noisereduce as nr
 import soundfile as sf
+import numpy as np
+import scipy.signal
 def apply_mcadams(sig, fs, winLengthinms=25, shiftLengthinms=10, lp_order=16, mcadams_factor=0.65):
     """
     Apply McAdams transformation to the audio.
