@@ -12,7 +12,11 @@ from pydub import AudioSegment
 import noisereduce as nr
 import soundfile as sf
 
-def apply_mcadams(sig, fs, winLengthinms=25, shiftLengthinms=10, lp_order=16, mcadams_factor=0.65):
+import numpy as np
+import scipy
+from scipy.io import wavfile
+
+def apply_mcadams(sig, fs, winLengthinms=25, shiftLengthinms=10, lp_order=16, mcadams_factor=0.7):
     """
     Apply McAdams transformation to the audio.
     
@@ -93,21 +97,24 @@ def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
     """
     # Load the audio file
 
-    arr_audio,fr=librosa.load(input_audio_path,sr=None)
-    audio_shifted=librosa.effects.pitch_shift(arr_audio,sr=fr,n_steps=3.0,scale=False)
-    audio_stretched = librosa.effects.time_stretch(audio_shifted,rate=1)
-    # sf.write(output_file_name, audio_stretched, sr, subtype='PCM_24')
+    # Load the audio file
+    sig, fs = librosa.load(input_audio_path, sr=None)
 
-    # Read the source audio file
-    noise_sample = audio_stretched[int(0 * fr) : int(1 * fr)]
+    # Apply McAdams transformation
+    sig_anonymized = apply_mcadams(sig, fs, mcadams_factor=0.7)
+
+    # Normalize the audio to avoid clipping
+    sig_anonymized = sig_anonymized / np.max(np.abs(sig_anonymized))
+
+    noise_sample = np.float32(sig_anonymized)[int(0 * fs) : int(1 * fs)]
     
     # Perform noise reduction
-    y_denoised = nr.reduce_noise(y=audio_stretched, sr=fr, y_noise=noise_sample, prop_decrease=1.0)
+    y_denoised = nr.reduce_noise(y=np.float32(sig_anonymized), sr=fs, y_noise=noise_sample, prop_decrease=1.0)
 
     # Apply your anonymization algorithm
 
     # Output:
     audio = y_denoised
-    sr = fr
+    sr = fs
     
     return audio, sr
